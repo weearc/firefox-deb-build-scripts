@@ -4,13 +4,21 @@ set -euxo pipefail
 LANG=zh-CN
 PLATFORM=linux64
 CHANNEL=firefox-latest
-
+BUILD_DIR=/tmp/build/firefox-deb
 SRCDIR=$BUILD_DIR/src
 PKGDIR=$BUILD_DIR/pkg
 PKGNAME=firefox
 _PKGNAME=Firefox
 hostname=$(hostnamectl | grep "Static" | awk '{print $3}')
 PKGARCH=amd64
+
+check_curl() {
+if [ ! -f /usr/bin/curl ];then
+	echo "Install curl first:
+sudo apt install curl"
+	exit
+fi
+}
 
 
 
@@ -158,7 +166,7 @@ dpkg-deb -b --root-owner-group "$PKGDIR" "$PKGNAME-$PKGVER-$PKGARCH.deb"
 }
 
 
-
+check_curl
 prepare
 package
 
