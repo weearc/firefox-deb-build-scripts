@@ -170,7 +170,7 @@ check_curl
 prepare
 package
 
-dpkg -i /tmp/build/"$PKGNAME-$PKGVER-$PKGARCH.deb"
+sudo dpkg -i /tmp/build/"$PKGNAME-$PKGVER-$PKGARCH.deb"
 
 rm -rf $BUILD_DIR
 
