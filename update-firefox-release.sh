@@ -1,4 +1,9 @@
 #!/bin/bash
+set -euxo pipefail
+# Parmas
+LANG=zh-CN
+PLATFORM=linux64
+CHANNEL=firefox-latest
 
 SRCDIR=$BUILD_DIR/src
 PKGDIR=$BUILD_DIR/pkg
@@ -8,13 +13,9 @@ hostname=$(hostnamectl | grep "Static" | awk '{print $3}')
 PKGARCH=amd64
 
 
-set -euxo pipefail
+
 mkdir -p $BUILD_DIR
 
-# Parmas
-LANG=zh-CN
-PLATFORM=linux64
-CHANNEL=firefox-latest
 
 
 firefox_latest() {
@@ -75,42 +76,39 @@ Description: Mozilla Firefox web browser
  web application technologies." > $PKGDIR/DEBIAN/control
  
 
-echo "[Desktop Action new-private-window]
-Exec=$PKGNAME --class=$_PKGNAME --private-window %u
-Name[zh_CN]=\xe6\x96\xb0\xe5\xbb\xba\xe9\x9a\x90\xe7\xa7\x81\xe6\xb5\x8f\xe8\xa7\x88\xe7\xaa\x97\xe5\x8f\xa3
-Name=New Private Window
-
-[Desktop Action new-window]
-Exec=$PKGNAME --class=$_PKGNAME --new-window %u
-Name[zh_CN]=\xe6\x96\xb0\xe5\xbb\xba\xe7\xaa\x97\xe5\x8f\xa3
-Name=New Window
-
-[Desktop Entry]
+echo "[Desktop Entry]
 Actions=new-window;new-private-window;
 Categories=Network;WebBrowser;
-Comment[zh_CN]=\xe6\xb5\x8f\xe8\xa7\x88\xe4\xba\x92\xe8\x81\x94\xe7\xbd\x91
-Comment=\xe6\xb5\x8f\xe8\xa7\x88\xe4\xba\x92\xe8\x81\x94\xe7\xbd\x91
-
-Exec=$PKGNAME
-GenericName[zh_CN]=\xe7\xbd\x91\xe7\xbb\x9c\xe6\xb5\x8f\xe8\xa7\x88\xe5\x99\xa8
-GenericName=\xe7\xbd\x91\xe7\xbb\x9c\xe6\xb5\x8f\xe8\xa7\x88\xe5\x99\xa8
-
+Comment[zh_CN]=网络浏览器
+Comment=Browse the web
+Exec=/usr/bin/$PKGNAME
+GenericName[zh_CN]=Firefox
+GenericName=Firefox
 Icon=$PKGNAME
 Keywords=web;browser;internet;
 MimeType=text/html;application/xml;application/xhtml+xml;application/vnd.mozilla.xul+xml;
 Name[zh_CN]=$_PKGNAME
 Name=$_PKGNAME
-Path=
 StartupNotify=true
 StartupWMClass=$_PKGNAME
 Terminal=false
-TerminalOptions=
-Type=Application" > $PKGDIR/usr/share/applications/firefox.desktop
+Type=Application
+
+[Desktop Action new-private-window]
+Exec=/usr/bin/$PKGNAME --class=$_PKGNAME --private-window %u
+Name[zh_CN]=新建隐私窗口
+Name=New Private Window
+
+[Desktop Action new-window]
+Exec=/usr/bin/$PKGNAME --class=$_PKGNAME --new-window %u
+Name[zh_CN]=新建窗口
+Name=New Window" > $PKGDIR/usr/share/applications/firefox.desktop && \
+chmod 755 $PKGDIR/usr/share/applications/firefox.desktop
 
 
  
  
- echo "#!/bin/bash
+echo "#!/bin/bash
 /opt/firefox/firefox $@" > $PKGDIR/usr/bin/$PKGNAME && chmod a+x $PKGDIR/usr/bin/$PKGNAME
  
  
