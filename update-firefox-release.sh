@@ -4,7 +4,7 @@ set -euxo pipefail
 LANG=zh-CN
 PLATFORM=linux64
 CHANNEL=firefox-latest
-BUILD_DIR=/tmp/build/firefox-deb
+BUILD_DIR=/tmp/build/firefox-release-deb
 SRCDIR=$BUILD_DIR/src
 PKGDIR=$BUILD_DIR/pkg
 PKGNAME=firefox
