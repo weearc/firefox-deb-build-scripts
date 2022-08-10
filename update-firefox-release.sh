@@ -3,14 +3,40 @@ set -euxo pipefail
 # Parmas
 LANG=zh-CN
 PLATFORM=linux64
-CHANNEL=firefox-latest
 BUILD_DIR=/tmp/build/firefox-release-deb
 SRCDIR=$BUILD_DIR/src
 PKGDIR=$BUILD_DIR/pkg
-PKGNAME=firefox
-_PKGNAME=Firefox
 hostname=$(hostnamectl | grep "Static" | awk '{print $3}')
 PKGARCH=amd64
+
+case $@ in
+    stable|"")
+        CHANNEL=firefox-latest
+        PKGNAME=firefox
+        _PKGNAME=Firefox
+        WMCLASS=firefox
+        ;;
+    beta)
+        CHANNEL=firefox-beta-latest-ssl
+        PKGNAME=firefox-beta
+        _PKGNAME=Firefox-beta
+        WMCLASS=firefox-beta
+        ;;
+    dev|develop)
+        CHANNEL=firefox-devedition-latest-ssl
+        PKGNAME=firefox-dev
+        _PKGNAME=Firefox-dev
+        WMCLASS=firefox-aurora
+        ;;
+    nightly|canary)
+        CHANNEL=firefox-nightly-latest-ssl
+        PKGNAME=firefox-nightly
+        _PKGNAME=Firefox-nightly
+        WMCLASS=firefox-nightly
+        ;;
+esac
+
+
 
 check_curl() {
 if [ ! -f /usr/bin/curl ];then
@@ -44,9 +70,27 @@ fi
 
 }
 
-prepare() {
-firefox_latest
+firefox_nightly() {
+# Get nightly version
 
+RES=$(curl -sSf https://download.mozilla.org/\?product\=$CHANNEL\&os\=$PLATFORM\&lang\=$LANG)
+FILE_=$(echo $RES |
+	awk -F "/latest-mozilla-central/" '{print $2}'|
+	awk '{split($0,b,"\">");print b[1]}')
+PKGVER=$(echo $FILE_ |
+    awk -F 'firefox-' '{print $2}' |
+    awk '{split($0,b,".en-US");print b[1]}')
+
+
+cd $BUILD_DIR
+if [ ! -f $FILE_ ];then
+	wget https://download.mozilla.org/\?product\=$CHANNEL\&os\=$PLATFORM\&lang\=$LANG -O $BUILD_DIR/$FILE_
+fi
+
+}
+
+
+prepare() {
 
 mkdir -p $SRCDIR
 mkdir -p $PKGDIR
@@ -67,7 +111,7 @@ tar -xvf $FILE_ -C $SRCDIR/
 cd $SRCDIR/firefox
 PKGSIZE=$(du | grep '\.$' | awk '{print $1}')
 
-echo "Package: $PKGNAME
+echo "Package: $PKGNAME-bin
 Version: $PKGVER
 Architecture: amd64
 Maintainer: $hostname-$(whoami)
@@ -98,26 +142,26 @@ MimeType=text/html;application/xml;application/xhtml+xml;application/vnd.mozilla
 Name[zh_CN]=$_PKGNAME
 Name=$_PKGNAME
 StartupNotify=true
-StartupWMClass=$_PKGNAME
+StartupWMClass=$WMCLASS
 Terminal=false
 Type=Application
 
 [Desktop Action new-private-window]
-Exec=/usr/bin/$PKGNAME --class=$_PKGNAME --private-window %u
+Exec=/usr/bin/$PKGNAME --private-window %u
 Name[zh_CN]=新建隐私窗口
 Name=New Private Window
 
 [Desktop Action new-window]
-Exec=/usr/bin/$PKGNAME --class=$_PKGNAME --new-window %u
+Exec=/usr/bin/$PKGNAME --new-window %u
 Name[zh_CN]=新建窗口
-Name=New Window" > $PKGDIR/usr/share/applications/firefox.desktop && \
-chmod 755 $PKGDIR/usr/share/applications/firefox.desktop
+Name=New Window" > $PKGDIR/usr/share/applications/$_PKGNAME.desktop && \
+chmod 755 $PKGDIR/usr/share/applications/$_PKGNAME.desktop
 
 
  
  
 echo "#!/bin/bash
-/opt/firefox/firefox $@" > $PKGDIR/usr/bin/$PKGNAME && chmod a+x $PKGDIR/usr/bin/$PKGNAME
+/opt/$PKGNAME/firefox $@" > $PKGDIR/usr/bin/$PKGNAME && chmod a+x $PKGDIR/usr/bin/$PKGNAME
  
  
 for i in 16 32 48 64 128
@@ -126,36 +170,36 @@ mkdir -p $PKGDIR/usr/share/icons/hicolor/${i}x${i}/apps
 cp /tmp/build/firefox-release-deb/src/firefox/browser/chrome/icons/default/default$i.png $PKGDIR/usr/share/icons/hicolor/${i}x${i}/apps/$PKGNAME.png
 done
 
-cp -rf $SRCDIR/$PKGNAME $PKGDIR/opt/$PKGNAME
+cp -rf $SRCDIR/firefox $PKGDIR/opt/$PKGNAME
 
 # Create postinst
 
-echo '#!/bin/sh -e
+echo "#!/bin/sh -e
 
-if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] ; then
-    update-alternatives --install /usr/bin/x-www-browser \
-        x-www-browser /usr/bin/firefox 70 
-    update-alternatives --remove mozilla /usr/bin/firefox
-    update-alternatives --install /usr/bin/gnome-www-browser \
-        gnome-www-browser /usr/bin/firefox 70
+if [ \"\$1\" = \"configure\" ] || [ \"\$1\" = \"abort-upgrade\" ] ; then
+    update-alternatives --install /usr/bin/x-www-browser \\
+        x-www-browser /usr/bin/$PKGNAME 70 
+    update-alternatives --remove mozilla /usr/bin/$PKGNAME
+    update-alternatives --install /usr/bin/gnome-www-browser \\
+        gnome-www-browser /usr/bin/$PKGNAME 70
 fi
 
-if [ "$1" = "configure" ] ; then
-    rm -rf /opt/firefox/firefox/updater
-fi' > $PKGDIR/DEBIAN/postinst && chmod 755 $PKGDIR/DEBIAN/postinst 
+if [ \"\$1\" = \"configure\" ] ; then
+    rm -rf /opt/$PKGNAME/updater
+fi" > $PKGDIR/DEBIAN/postinst && chmod 755 $PKGDIR/DEBIAN/postinst 
 
 # Create prerm
 
-echo '#!/bin/sh -e
+echo "#!/bin/sh -e
 
-if [ "$1" = "remove" ] || [ "$1" = "deconfigure" ] ; then
-    update-alternatives --remove x-www-browser /usr/bin/firefox
-    update-alternatives --remove gnome-www-browser /usr/bin/firefox
+if [ \"\$1\" = \"remove\" ] || [ \"\$1\" = \"deconfigure\" ] ; then
+    update-alternatives --remove x-www-browser /usr/bin/$PKGNAME
+    update-alternatives --remove gnome-www-browser /usr/bin/$PKGNAME
 fi
 
-if [ "$1" = "remove" ]; then
-    rm -rf /opt/firefox/firefox/updater
-fi' > $PKGDIR/DEBIAN/prerm && chmod 755 $PKGDIR/DEBIAN/prerm
+if [ \"\$1\" = \"remove\" ]; then
+    rm -rf /opt/$PKGNAME/updater
+fi" > $PKGDIR/DEBIAN/prerm && chmod 755 $PKGDIR/DEBIAN/prerm
 
 }
 
@@ -167,6 +211,22 @@ dpkg-deb -b --root-owner-group "$PKGDIR" "$PKGNAME-$PKGVER-$PKGARCH.deb"
 
 
 check_curl
+case $CHANNEL in
+
+    "firefox-latest")
+        firefox_latest
+        ;;
+    "firefox-beta-latest-ssl")
+        firefox_latest
+        ;;
+    "firefox-devedition-latest-ssl")
+        firefox_latest
+        ;;
+    "firefox-nightly-latest-ssl")
+        firefox_nightly
+        ;;
+esac
+    
 prepare
 package
 
