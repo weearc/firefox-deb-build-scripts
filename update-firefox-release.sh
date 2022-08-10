@@ -120,9 +120,9 @@ Depends: fontconfig, procps, debianutils
 Recommends: libavcodeclibavcodec.so | libavcodec-extralibavcodec.so | libavcodec59 | libavcodec-extra59 | libavcodec58 | libavcodec-extra58 | libavcodec57 | libavcodec-extra57 | libavcodec56 | libavcodec-extra56 | libavcodec55 | libavcodec-extra55 | libavcodec54 | libavcodec-extra54 | libavcodec53 | libavcodec-extra53
 Suggests: fonts-stix | otf-stix, fonts-lmodern, libgssapi-krb5-2 | libkrb53, libcanberra0, pulseaudio
 Breaks: xul-ext-torbutton
-Provides: gnome-www-browser, www-browser, Firefox
-Conflicts: firefox, firefox-esr
-Replaces: firefox
+Provides: gnome-www-browser, www-browser
+Conflicts: $PKGNAME, firefox-esr
+Replaces: $PKGNAME
 Section: web
 Priority: optional
 Description: Mozilla Firefox web browser
